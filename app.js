@@ -75,15 +75,7 @@ document.addEventListener('keydown', function(e) {
     case DPAD.RIGHT:  moveFocus('right'); break;
     case DPAD.SELECT:
       if (document.activeElement && document.activeElement.classList.contains('focusable')) {
-        if (document.activeElement.tagName === 'SELECT') {
-          const sel = document.activeElement;
-          if (sel.options.length > 0) {
-            sel.selectedIndex = (sel.selectedIndex + 1) % sel.options.length;
-            sel.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        } else {
-          document.activeElement.click();
-        }
+        document.activeElement.click();
       }
       break;
     case DPAD.BACK:
@@ -334,6 +326,13 @@ function setupUIEventListeners() {
     modeBatterBtn.classList.remove('active');
     state.mode = 'bowler';
     updatePlayersDropdown();
+  });
+
+  playerSelect.addEventListener('click', () => {
+    if (playerSelect.options.length > 0) {
+      playerSelect.selectedIndex = (playerSelect.selectedIndex + 1) % playerSelect.options.length;
+      playerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   });
 
   playerSelect.addEventListener('change', (e) => {
