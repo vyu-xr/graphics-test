@@ -21,7 +21,7 @@
   </script>
 </head>
 <body>
-  <!-- Canvas Container (3D Viewport with Continuous Pointer Dragging) -->
+  <!-- Canvas Container (3D Viewport with Toggleable Pointer Dragging) -->
   <div id="canvas-container"></div>
 
   <!-- Floating Reopen Sidebar Button (Visible if panel is closed) -->
@@ -55,7 +55,7 @@
         </svg>
         <span>3D MRBD <span class="badge">600x600</span></span>
       </div>
-      <button class="icon-btn toggle-sidebar focusable" id="toggle-sidebar-btn" aria-label="Toggle Panel" data-focusable>
+      <button class="icon-btn toggle-sidebar focusable" id="toggle-sidebar-btn" aria-label="Toggle Panel" data-focusable title="Back / Collapse Panel">
         <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
           <polyline points="15 18 9 12 15 6"></polyline>
         </svg>
@@ -81,7 +81,15 @@
         </div>
       </div>
 
-      <!-- 3. Player Selector Dropdown -->
+      <!-- 3. Toggleable 3D Viewport Drag Gesture -->
+      <div class="control-group">
+        <label>3D Viewport Gesture Mode</label>
+        <button id="drag-toggle-btn" class="drag-toggle-btn focusable" data-focusable>
+          🖐️ 3D Orbit Drag: OFF
+        </button>
+      </div>
+
+      <!-- 4. Player Selector Dropdown -->
       <div class="control-group">
         <label for="player-select" id="player-select-label">Select Batter</label>
         <select id="player-select" class="custom-select focusable" data-focusable>
@@ -89,7 +97,7 @@
         </select>
       </div>
 
-      <!-- 4. Player Stats Card -->
+      <!-- 5. Player Stats Card -->
       <div class="stat-card">
         <div class="stat-title" id="stat-player-title">Sanju Samson</div>
         <div class="stat-grid" id="stat-grid-container">
@@ -113,7 +121,7 @@
         <div class="outcome-badge" id="stat-summary-badge">Wagon Wheel Active</div>
       </div>
 
-      <!-- 5. List of All Shots / Ball Trajectories -->
+      <!-- 6. List of All Shots / Ball Trajectories -->
       <div class="control-group">
         <label id="catalog-label">Shots Catalog</label>
         <div id="shots-list-container" class="shots-list">
@@ -121,7 +129,7 @@
         </div>
       </div>
 
-      <!-- 6. Camera View Presets -->
+      <!-- 7. Camera View Presets -->
       <div class="control-group">
         <label>3D View Angle</label>
         <div class="cam-presets-grid">

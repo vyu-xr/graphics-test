@@ -7,7 +7,8 @@ import { T20_FINAL_2026_DELIVERIES, TEAMS_ROSTERS } from './cricketData.js';
 const state = {
   team: 'IND',          // 'IND' | 'NZ'
   mode: 'batter',       // 'batter' (Wagon Wheel) | 'bowler' (Pitch Trajectory Map)
-  selectedPlayerId: 'samson'
+  selectedPlayerId: 'samson',
+  dragEnabled: false    // Toggleable 3D Orbit Drag Mode (OFF by default)
 };
 
 // Global Three.js References
@@ -16,6 +17,9 @@ let cricketSceneInstance = null;
 
 // DOM Elements
 const canvasContainer = document.getElementById('canvas-container');
+const sidebar = document.getElementById('sidebar');
+const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+const openSidebarBtn = document.getElementById('open-sidebar-btn');
 
 // Ticker Elements
 const tickerViewMode = document.getElementById('ticker-view-mode');
@@ -26,6 +30,7 @@ const teamIndBtn = document.getElementById('team-ind-btn');
 const teamNzBtn = document.getElementById('team-nz-btn');
 const modeBatterBtn = document.getElementById('mode-batter-btn');
 const modeBowlerBtn = document.getElementById('mode-bowler-btn');
+const dragToggleBtn = document.getElementById('drag-toggle-btn');
 const playerSelectLabel = document.getElementById('player-select-label');
 const playerSelect = document.getElementById('player-select');
 const catalogLabel = document.getElementById('catalog-label');
@@ -84,16 +89,26 @@ document.addEventListener('keydown', function(e) {
       }
       break;
     case DPAD.BACK:
-      if (window.history.length > 1) {
-        history.back();
-      }
+      // Toggle sidebar open/closed on Back button press
+      toggleSidebarState();
       break;
     default: return; // don't preventDefault on unhandled keys
   }
   e.preventDefault();
 });
 
-// Initialize Engine (Pure Visual 3D Background - Drag Disabled Completely)
+// Toggle Sidebar Helper
+function toggleSidebarState() {
+  if (!sidebar) return;
+  sidebar.classList.toggle('collapsed');
+  if (sidebar.classList.contains('collapsed')) {
+    if (openSidebarBtn) openSidebarBtn.classList.remove('hidden');
+  } else {
+    if (openSidebarBtn) openSidebarBtn.classList.add('hidden');
+  }
+}
+
+// Initialize Engine
 function initEngine() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
@@ -109,9 +124,18 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
-  // OrbitControls initialized WITHOUT pointer drag listeners (Disabled Completely)
+  // Setup OrbitControls (Controlled dynamically by state.dragEnabled)
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.enabled = false; // COMPLETELY DISABLE DRAG / ROTATE / PAN / ZOOM
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.zoomSpeed = 2.0;
+  controls.panSpeed = 1.5;
+  controls.rotateSpeed = 1.5;
+  controls.target.set(0, 2, 8);
+  controls.enabled = false; // Disabled by default
+
+  // Universal release safeguard so dragging NEVER locks up controls
+  setupDragReleaseSafeguard();
 
   cricketSceneInstance = new CricketStadiumScene(scene, camera, controls);
   cricketSceneInstance.setCameraPreset('broadcast');
@@ -121,10 +145,44 @@ function initEngine() {
 
   updatePlayersDropdown();
   
-  // Set initial focus on first focusable element
+  // Initial focus on first focusable element
   setTimeout(() => moveFocus('down'), 50);
 
   renderer.setAnimationLoop(animate);
+}
+
+// 🖐️ Continuous Drag Toggle Handler
+function toggleDragGestureMode() {
+  state.dragEnabled = !state.dragEnabled;
+
+  if (state.dragEnabled) {
+    dragToggleBtn.classList.add('active');
+    dragToggleBtn.textContent = "🖐️ 3D Orbit Drag: ON (Active)";
+    canvasContainer.classList.add('drag-active');
+    controls.enabled = true;
+  } else {
+    dragToggleBtn.classList.remove('active');
+    dragToggleBtn.textContent = "🖐️ 3D Orbit Drag: OFF";
+    canvasContainer.classList.remove('drag-active');
+    controls.enabled = false;
+  }
+}
+
+// Universal Pointer Drag Release Safeguard
+function setupDragReleaseSafeguard() {
+  const forceRelease = function(e) {
+    // If click targets UI controls, prevent canvas capture interference
+    if (e.target && (e.target.closest('#sidebar') || e.target.closest('.match-ticker-bar') || e.target.closest('.open-sidebar-btn') || e.target.classList.contains('focusable'))) {
+      if (controls && controls.enabled) {
+        controls.update();
+      }
+    }
+  };
+
+  window.addEventListener('pointerup', forceRelease, true);
+  window.addEventListener('pointercancel', forceRelease, true);
+  window.addEventListener('mouseup', forceRelease, true);
+  window.addEventListener('touchend', forceRelease, true);
 }
 
 // Update Player Dropdown Roster
@@ -279,6 +337,9 @@ function populateCatalogList(items) {
 }
 
 function animate() {
+  if (controls && controls.enabled) {
+    controls.update();
+  }
   renderer.render(scene, camera);
 }
 
@@ -287,6 +348,20 @@ function onWindowResize() {
 }
 
 function setupUIEventListeners() {
+  // Sidebar Collapse / Reopen Buttons
+  if (toggleSidebarBtn) {
+    toggleSidebarBtn.addEventListener('click', toggleSidebarState);
+  }
+
+  if (openSidebarBtn) {
+    openSidebarBtn.addEventListener('click', toggleSidebarState);
+  }
+
+  // 3D Drag Toggle Button
+  if (dragToggleBtn) {
+    dragToggleBtn.addEventListener('click', toggleDragGestureMode);
+  }
+
   teamIndBtn.addEventListener('click', () => {
     teamIndBtn.classList.add('active');
     teamNzBtn.classList.remove('active');

@@ -32,7 +32,7 @@ html, body {
   padding: 0;
 }
 
-/* Background 3D Viewport - Pointer Drag Disabled Completely */
+/* Background 3D Viewport */
 #canvas-container {
   width: 600px;
   height: 600px;
@@ -40,13 +40,21 @@ html, body {
   top: 0;
   left: 0;
   z-index: 1;
-  pointer-events: none !important; /* Canvas ignores all pointer events */
+  pointer-events: none;
 }
 
 #canvas-container canvas {
   width: 600px !important;
   height: 600px !important;
-  pointer-events: none !important;
+}
+
+/* When 3D drag is active, pointer-events are enabled on canvas */
+#canvas-container.drag-active {
+  pointer-events: auto !important;
+}
+
+#canvas-container.drag-active canvas {
+  pointer-events: auto !important;
 }
 
 /* Glasses Minimum Tap Target & Visible Focus Styles */
@@ -57,6 +65,7 @@ html, body {
   cursor: pointer;
   box-sizing: border-box;
   pointer-events: auto !important;
+  z-index: 100;
 }
 
 .focusable:focus,
@@ -64,8 +73,32 @@ html, body {
   outline: none !important;
   border-color: #00d4ff !important;
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.6) !important;
-  background: rgba(0, 212, 255, 0.2) !important;
+  background: rgba(0, 212, 255, 0.25) !important;
   color: #ffffff !important;
+}
+
+/* Reopen Panel Floating Button */
+.open-sidebar-btn {
+  position: absolute;
+  top: 56px;
+  left: 10px;
+  z-index: 120;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  background: #000000;
+  border: 2px solid var(--accent-cyan);
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.open-sidebar-btn.hidden {
+  display: none !important;
 }
 
 /* Glassmorphism Panel */
@@ -84,7 +117,7 @@ html, body {
   top: 8px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 50;
+  z-index: 90;
   display: flex;
   align-items: center;
   padding: 6px 14px;
@@ -92,6 +125,7 @@ html, body {
   gap: 12px;
   width: 580px;
   justify-content: space-between;
+  pointer-events: auto !important;
 }
 
 .ticker-col {
@@ -145,7 +179,12 @@ html, body {
   z-index: 100;
   display: flex;
   flex-direction: column;
+  transition: transform 0.25s ease;
   pointer-events: auto !important;
+}
+
+.sidebar.collapsed {
+  transform: translateX(-280px);
 }
 
 .panel-header {
@@ -199,6 +238,45 @@ html, body {
   border-radius: 4px;
 }
 
+.icon-btn {
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  min-width: 48px;
+  border-radius: 8px;
+}
+
+/* 3D Drag Toggle Button */
+.drag-toggle-btn {
+  padding: 10px;
+  background: #07090e;
+  border: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 88px;
+  cursor: pointer;
+}
+
+.drag-toggle-btn.active {
+  background: rgba(0, 212, 255, 0.25);
+  border-color: var(--accent-cyan);
+  color: #00d4ff;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+}
+
 /* Team & Category Tabs */
 .team-tabs, .mode-tabs, .cam-presets-grid {
   display: grid;
@@ -219,6 +297,7 @@ html, body {
   align-items: center;
   justify-content: center;
   text-align: center;
+  min-height: 88px;
 }
 
 .team-btn.active, .mode-btn.active, .cam-btn.active {
@@ -251,6 +330,7 @@ html, body {
   font-family: var(--font-sans);
   font-size: 0.78rem;
   font-weight: 600;
+  min-height: 88px;
 }
 
 .custom-select option {
@@ -329,6 +409,7 @@ html, body {
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
+  min-height: 88px;
 }
 
 .shot-info {
