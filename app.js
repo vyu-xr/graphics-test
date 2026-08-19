@@ -120,7 +120,7 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
-  // Setup Standard MRBD Pointer Events for 3D Viewport Panning
+  // Setup Standard MRBD Pointer Drag Panning for 3D Viewport
   setupMRBDPointerDrag();
 
   cricketSceneInstance = new CricketStadiumScene(scene, camera, null);
@@ -143,7 +143,6 @@ function setupMRBDPointerDrag() {
   let lastPointerPos = { x: 0, y: 0 };
 
   canvasContainer.addEventListener('pointerdown', function(e) {
-    // Ignore pointerdown if clicked on UI elements
     if (e.target.closest('#sidebar') || e.target.closest('.match-ticker-bar') || e.target.closest('.open-sidebar-btn') || e.target.classList.contains('focusable')) {
       return;
     }
@@ -160,10 +159,10 @@ function setupMRBDPointerDrag() {
       const deltaX = e.clientX - lastPointerPos.x;
       const deltaY = e.clientY - lastPointerPos.y;
 
-      // Pan camera across the 3D stadium pitch using e.clientX and e.clientY
-      camera.position.x -= deltaX * 0.12;
-      camera.position.z += deltaY * 0.12;
-      camera.lookAt(camera.position.x, 2, camera.position.z - 50);
+      // Pan camera within safe stadium boundaries
+      camera.position.x = Math.max(-50, Math.min(50, camera.position.x - deltaX * 0.08));
+      camera.position.z = Math.max(20, Math.min(90, camera.position.z + deltaY * 0.08));
+      camera.lookAt(0, 2, 8); // Always keep stadium pitch centered!
 
       lastPointerPos = { x: e.clientX, y: e.clientY };
     }

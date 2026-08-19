@@ -1,7 +1,7 @@
 /* Meta Ray-Ban Display Additive Display & Focus System */
 :root {
   --bg-dark: #000000;
-  --panel-bg: rgba(10, 14, 26, 0.95);
+  --panel-bg: rgba(14, 18, 30, 0.95);
   --panel-border: rgba(0, 212, 255, 0.4);
   --accent-cyan: #00d4ff;
   --accent-gold: #facc15;
@@ -18,9 +18,8 @@
   padding: 0;
 }
 
-/* MUST be in your initial stylesheet, as it is not added dynamically via JavaScript */
-body {
-  touch-action: none;
+/* Fixed 600x600 Viewport */
+html, body {
   width: 600px;
   height: 600px;
   max-width: 600px;
@@ -29,16 +28,9 @@ body {
   background-color: #000000;
   color: #ffffff;
   font-family: var(--font-sans);
+  touch-action: none;
   margin: 0;
   padding: 0;
-}
-
-html {
-  width: 600px;
-  height: 600px;
-  max-width: 600px;
-  max-height: 600px;
-  overflow: hidden;
 }
 
 /* Background 3D Viewport */
@@ -58,11 +50,11 @@ html {
   touch-action: none;
 }
 
-/* Glasses Minimum Tap Target & Visible Focus Styles */
+/* Glasses High Contrast Focus System */
 .focusable {
   transition: all 150ms ease;
   border: 2px solid transparent;
-  min-height: 88px; /* glasses minimum tap target */
+  min-height: 48px;
   cursor: pointer;
   box-sizing: border-box;
   pointer-events: auto !important;
@@ -73,7 +65,7 @@ html {
 .focusable.focused {
   outline: none !important;
   border-color: #00d4ff !important;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.6) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.7) !important;
   background: rgba(0, 212, 255, 0.25) !important;
   color: #ffffff !important;
 }
@@ -92,7 +84,7 @@ html {
   border: 2px solid var(--accent-cyan);
   border-radius: 8px;
   cursor: pointer;
-  min-height: 88px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,8 +240,8 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  min-width: 48px;
+  min-height: 40px;
+  min-width: 40px;
   border-radius: 8px;
 }
 
@@ -261,8 +253,8 @@ html {
 }
 
 .team-btn, .mode-btn, .cam-btn {
-  padding: 10px 6px;
-  background: #07090e;
+  padding: 8px 6px;
+  background: #0e121e;
   border: 1px solid var(--panel-border);
   color: var(--text-muted);
   font-family: var(--font-sans);
@@ -273,7 +265,7 @@ html {
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 88px;
+  min-height: 44px;
 }
 
 .team-btn.active, .mode-btn.active, .cam-btn.active {
@@ -298,19 +290,19 @@ html {
 
 .custom-select {
   width: 100%;
-  padding: 10px;
-  background: #07090e;
+  padding: 8px 10px;
+  background: #0e121e;
   border: 2px solid var(--panel-border);
   border-radius: 8px;
   color: #ffffff;
   font-family: var(--font-sans);
   font-size: 0.78rem;
   font-weight: 600;
-  min-height: 88px;
+  min-height: 48px;
 }
 
 .custom-select option {
-  background: #07090e;
+  background: #0e121e;
   color: #ffffff;
   padding: 8px;
 }
@@ -381,11 +373,11 @@ html {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid var(--panel-border);
   border-radius: 6px;
-  min-height: 88px;
+  min-height: 48px;
 }
 
 .shot-info {
