@@ -41,13 +41,14 @@ const statP3 = document.getElementById('stat-p3');
 const statP4 = document.getElementById('stat-p4');
 const statSummaryBadge = document.getElementById('stat-summary-badge');
 
-// — Meta Ray-Ban Display Web Apps Focus Management —
+// — Input Constants —
 const DPAD = {
   UP: 'ArrowUp', DOWN: 'ArrowDown',
   LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
   SELECT: 'Enter', BACK: 'Escape',
 };
 
+// — Focus Management —
 function moveFocus(direction) {
   var focusables = Array.from(
     document.querySelectorAll('.focusable:not([disabled]):not(.hidden)')
@@ -86,7 +87,11 @@ document.addEventListener('keydown', function(e) {
       }
       break;
     case DPAD.BACK:
-      toggleSidebarState();
+      if (window.history.length > 1) {
+        history.back();
+      } else {
+        toggleSidebarState();
+      }
       break;
     default: return; // don't preventDefault on unhandled keys
   }
