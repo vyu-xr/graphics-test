@@ -45,8 +45,23 @@ const statSummaryBadge = document.getElementById('stat-summary-badge');
 const DPAD = {
   UP: 'ArrowUp', DOWN: 'ArrowDown',
   LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
-  SELECT: 'Enter', BACK: 'Escape',
+  BACK: 'Escape',
 };
+
+// Neural Band Pinch & Captouch Select Keys (Enter, Space, Select, Accept, KeyCodes 13 & 32)
+function isSelectKey(e) {
+  return (
+    e.key === 'Enter' ||
+    e.key === ' ' ||
+    e.key === 'Space' ||
+    e.key === 'Spacebar' ||
+    e.key === 'Select' ||
+    e.key === 'Accept' ||
+    e.code === 'Space' ||
+    e.keyCode === 32 ||
+    e.keyCode === 13
+  );
+}
 
 // — Focus Management —
 function moveFocus(direction) {
@@ -66,18 +81,21 @@ function moveFocus(direction) {
   focusables[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-// — D-pad Listener —
+// — D-pad & Neural Band Gesture Listener —
 document.addEventListener('keydown', function(e) {
+  if (isSelectKey(e)) {
+    if (document.activeElement && document.activeElement.classList.contains('focusable')) {
+      document.activeElement.click();
+    }
+    e.preventDefault();
+    return;
+  }
+
   switch (e.key) {
     case DPAD.UP:     moveFocus('up');    break;
     case DPAD.DOWN:   moveFocus('down');  break;
     case DPAD.LEFT:   moveFocus('left');  break;
     case DPAD.RIGHT:  moveFocus('right'); break;
-    case DPAD.SELECT:
-      if (document.activeElement && document.activeElement.classList.contains('focusable')) {
-        document.activeElement.click();
-      }
-      break;
     case DPAD.BACK:
       if (window.history.length > 1) {
         history.back();
@@ -88,6 +106,13 @@ document.addEventListener('keydown', function(e) {
     default: return; // don't preventDefault on unhandled keys
   }
   e.preventDefault();
+});
+
+// Prevent Space key default page scrolling on keyup
+document.addEventListener('keyup', function(e) {
+  if (isSelectKey(e)) {
+    e.preventDefault();
+  }
 });
 
 // Toggle Sidebar Helper
