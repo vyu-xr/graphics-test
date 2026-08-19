@@ -18,8 +18,6 @@ let raycaster, mouse;
 // DOM Elements
 const canvasContainer = document.getElementById('canvas-container');
 const sidebar = document.getElementById('sidebar');
-const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
-const openSidebarBtn = document.getElementById('open-sidebar-btn');
 
 // Ticker Elements
 const tickerViewMode = document.getElementById('ticker-view-mode');
@@ -48,87 +46,58 @@ const tooltip = document.getElementById('tooltip');
 const tooltipTitle = document.getElementById('tooltip-title');
 const tooltipX = document.getElementById('tooltip-x');
 
-// — Meta Ray-Ban Display Focus Management & D-Pad System —
-let focusableElements = [];
-let focusIndex = 0;
+// — Meta Ray-Ban Display Web Apps Focus Management —
+const DPAD = {
+  UP: 'ArrowUp', DOWN: 'ArrowDown',
+  LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
+  SELECT: 'Enter', BACK: 'Escape',
+};
 
-function updateFocusables() {
-  focusableElements = Array.from(
-    document.querySelectorAll('[data-focusable]:not([disabled]), .focusable:not([disabled])')
+function moveFocus(direction) {
+  var focusables = Array.from(
+    document.querySelectorAll('.focusable:not([disabled]):not(.hidden)')
   );
+  if (!focusables.length) return;
+
+  var idx = focusables.indexOf(document.activeElement);
+  if (idx === -1) { focusables[0].focus(); return; }
+
+  var next = (direction === 'up' || direction === 'left')
+    ? (idx > 0 ? idx - 1 : focusables.length - 1)
+    : (idx < focusables.length - 1 ? idx + 1 : 0);
+
+  focusables[next].focus();
+  focusables[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-function moveFocus(idx) {
-  updateFocusables();
-  if (!focusableElements.length) return;
-
-  focusableElements.forEach(el => el.classList.remove('focused'));
-  
-  focusIndex = (idx + focusableElements.length) % focusableElements.length;
-  
-  const target = focusableElements[focusIndex];
-  if (target) {
-    target.classList.add('focused');
-    target.focus();
-    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }
-}
-
-document.addEventListener('focusin', function(e) {
-  const idx = focusableElements.indexOf(e.target);
-  if (idx !== -1) {
-    focusableElements.forEach(el => el.classList.remove('focused'));
-    focusIndex = idx;
-    e.target.classList.add('focused');
-  }
-});
-
-// Neural Band EMG & Captouch D-Pad Listener
+// — D-pad Listener —
 document.addEventListener('keydown', function(e) {
-  const DPAD = {
-    UP: 'ArrowUp', DOWN: 'ArrowDown',
-    LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
-    SELECT: 'Enter', BACK: 'Escape', BACKSPACE: 'Backspace'
-  };
-
   switch (e.key) {
-    case DPAD.UP:
-    case DPAD.LEFT:
-      e.preventDefault();
-      moveFocus(focusIndex - 1);
-      break;
-    case DPAD.DOWN:
-    case DPAD.RIGHT:
-      e.preventDefault();
-      moveFocus(focusIndex + 1);
-      break;
+    case DPAD.UP:     moveFocus('up');    break;
+    case DPAD.DOWN:   moveFocus('down');  break;
+    case DPAD.LEFT:   moveFocus('left');  break;
+    case DPAD.RIGHT:  moveFocus('right'); break;
     case DPAD.SELECT:
-      e.preventDefault();
-      const activeEl = document.activeElement || focusableElements[focusIndex];
-      if (activeEl) {
-        if (activeEl.tagName === 'SELECT') {
-          if (typeof activeEl.showPicker === 'function') {
-            try { activeEl.showPicker(); } catch(err) {}
-          }
-          if (activeEl.options.length > 0) {
-            activeEl.selectedIndex = (activeEl.selectedIndex + 1) % activeEl.options.length;
-            activeEl.dispatchEvent(new Event('change', { bubbles: true }));
-            activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+      if (document.activeElement && document.activeElement.classList.contains('focusable')) {
+        if (document.activeElement.tagName === 'SELECT') {
+          const sel = document.activeElement;
+          if (sel.options.length > 0) {
+            sel.selectedIndex = (sel.selectedIndex + 1) % sel.options.length;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
           }
         } else {
-          activeEl.click();
+          document.activeElement.click();
         }
       }
       break;
     case DPAD.BACK:
-    case DPAD.BACKSPACE:
-      e.preventDefault();
-      sidebar.classList.remove('collapsed');
-      if (openSidebarBtn) openSidebarBtn.classList.add('hidden');
+      if (window.history.length > 1) {
+        history.back();
+      }
       break;
-    default:
-      return;
+    default: return; // don't preventDefault on unhandled keys
   }
+  e.preventDefault();
 });
 
 // Initialize Engine
@@ -147,7 +116,7 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
-  // Setup Clean OrbitControls with Guaranteed Release
+  // Setup Standard OrbitControls with DOM Element Listeners
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -156,8 +125,8 @@ function initEngine() {
   controls.rotateSpeed = 1.5;
   controls.target.set(0, 2, 8);
 
-  // Global Pointer Release Safeguard (Guarantees drag stops instantly on pointerup/mouseup/touchend)
-  setupGlobalDragReleaseSafeguard();
+  // Ensure 3D Viewport Drag Release never locks
+  setupDragReleaseSafeguard();
 
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
@@ -169,31 +138,27 @@ function initEngine() {
   renderer.domElement.addEventListener('mousemove', onMouseMove);
   setupUIEventListeners();
 
-  const observer = new MutationObserver(function() {
-    updateFocusables();
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
-
   updatePlayersDropdown();
-  updateFocusables();
-  if (focusableElements.length) moveFocus(0);
+  
+  // Set initial focus on first focusable element
+  setTimeout(() => moveFocus('down'), 50);
 
   renderer.setAnimationLoop(animate);
 }
 
-// 🖐️ Global Pointer Drag Release Safeguard
-function setupGlobalDragReleaseSafeguard() {
-  const forceStopDrag = function() {
+// 🖐️ Continuous Drag Release Safeguard
+function setupDragReleaseSafeguard() {
+  const forceRelease = function() {
     if (controls) {
-      // Force OrbitControls state reset if stuck
       controls.update();
     }
   };
 
-  window.addEventListener('pointerup', forceStopDrag, { capture: true });
-  window.addEventListener('pointercancel', forceStopDrag, { capture: true });
-  window.addEventListener('mouseup', forceStopDrag, { capture: true });
-  window.addEventListener('touchend', forceStopDrag, { capture: true });
+  window.addEventListener('pointerup', forceRelease, true);
+  window.addEventListener('pointercancel', forceRelease, true);
+  window.addEventListener('mouseup', forceRelease, true);
+  window.addEventListener('touchend', forceRelease, true);
+  window.addEventListener('pointerleave', forceRelease, true);
 }
 
 // Update Player Dropdown Roster
@@ -231,7 +196,6 @@ function updatePlayersDropdown() {
   }
 
   renderSelectedModeAnalytics();
-  updateFocusables();
 }
 
 // Render 3D Scene & Update HUD Stats Card
@@ -302,14 +266,13 @@ function renderSelectedModeAnalytics() {
   }
 }
 
-// Populate Shots Catalog List
+// Populate Shots Catalog List with .focusable class
 function populateCatalogList(items) {
   shotsListContainer.innerHTML = '';
 
   items.forEach((item, idx) => {
     const card = document.createElement('div');
     card.className = `shot-item focusable ${idx === 0 ? 'active' : ''}`;
-    card.setAttribute('data-focusable', '');
     card.tabIndex = 0;
 
     let badgeClass = 'single';
@@ -347,8 +310,6 @@ function populateCatalogList(items) {
 
     shotsListContainer.appendChild(card);
   });
-
-  updateFocusables();
 }
 
 function animate() {
@@ -387,20 +348,6 @@ function onWindowResize() {
 }
 
 function setupUIEventListeners() {
-  if (toggleSidebarBtn) {
-    toggleSidebarBtn.addEventListener('click', () => {
-      sidebar.classList.add('collapsed');
-      if (openSidebarBtn) openSidebarBtn.classList.remove('hidden');
-    });
-  }
-
-  if (openSidebarBtn) {
-    openSidebarBtn.addEventListener('click', () => {
-      sidebar.classList.remove('collapsed');
-      openSidebarBtn.classList.add('hidden');
-    });
-  }
-
   teamIndBtn.addEventListener('click', () => {
     teamIndBtn.classList.add('active');
     teamNzBtn.classList.remove('active');
@@ -430,11 +377,6 @@ function setupUIEventListeners() {
   });
 
   playerSelect.addEventListener('change', (e) => {
-    state.selectedPlayerId = e.target.value;
-    renderSelectedModeAnalytics();
-  });
-
-  playerSelect.addEventListener('input', (e) => {
     state.selectedPlayerId = e.target.value;
     renderSelectedModeAnalytics();
   });
