@@ -391,18 +391,22 @@ export class CricketStadiumScene {
 
     if (presetName === 'broadcast') {
       this.camera.position.set(0, 24, 58);
-      this.controls.target.set(0, 2, pitchCenterZ);
+      if (this.controls) this.controls.target.set(0, 2, pitchCenterZ);
+      else this.camera.lookAt(0, 2, pitchCenterZ);
     } else if (presetName === 'topdown') {
       this.camera.position.set(0, 85, pitchCenterZ);
-      this.controls.target.set(0, 0, pitchCenterZ);
+      if (this.controls) this.controls.target.set(0, 0, pitchCenterZ);
+      else this.camera.lookAt(0, 0, pitchCenterZ);
     } else if (presetName === 'pitchcam') {
       this.camera.position.set(8, 5, 22);
-      this.controls.target.set(0, 1, 5);
+      if (this.controls) this.controls.target.set(0, 1, 5);
+      else this.camera.lookAt(0, 1, 5);
     } else if (presetName === 'batterpov') {
       this.camera.position.set(0, 2.2, -8);
-      this.controls.target.set(0, 1.5, 14);
+      if (this.controls) this.controls.target.set(0, 1.5, 14);
+      else this.camera.lookAt(0, 1.5, 14);
     }
-    this.controls.update();
+    if (this.controls) this.controls.update();
   }
 
   clearGroup(group) {
