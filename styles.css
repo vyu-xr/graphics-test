@@ -33,7 +33,7 @@ html, body {
   padding: 0;
 }
 
-/* Background 3D Viewport */
+/* Background 3D Viewport - Pointer Events Disabled to prevent drag gestures */
 #canvas-container {
   width: 600px;
   height: 600px;
@@ -42,12 +42,18 @@ html, body {
   left: 0;
   z-index: 1;
   touch-action: none;
+  pointer-events: none !important;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #canvas-container canvas {
   width: 600px !important;
   height: 600px !important;
   touch-action: none;
+  pointer-events: none !important;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Glasses High Contrast Focus System */

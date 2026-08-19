@@ -123,6 +123,7 @@ function initEngine() {
   cricketSceneInstance = new CricketStadiumScene(scene, camera, null);
   cricketSceneInstance.setCameraPreset('broadcast');
 
+  canvasContainer.addEventListener('dragstart', (e) => e.preventDefault());
   window.addEventListener('resize', onWindowResize);
   setupUIEventListeners();
 
