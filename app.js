@@ -13,11 +13,9 @@ const state = {
 // Global Three.js References
 let scene, camera, renderer, controls;
 let cricketSceneInstance = null;
-let raycaster, mouse;
 
 // DOM Elements
 const canvasContainer = document.getElementById('canvas-container');
-const sidebar = document.getElementById('sidebar');
 
 // Ticker Elements
 const tickerViewMode = document.getElementById('ticker-view-mode');
@@ -40,11 +38,6 @@ const statP2 = document.getElementById('stat-p2');
 const statP3 = document.getElementById('stat-p3');
 const statP4 = document.getElementById('stat-p4');
 const statSummaryBadge = document.getElementById('stat-summary-badge');
-
-// Tooltip Elements
-const tooltip = document.getElementById('tooltip');
-const tooltipTitle = document.getElementById('tooltip-title');
-const tooltipX = document.getElementById('tooltip-x');
 
 // — Meta Ray-Ban Display Web Apps Focus Management —
 const DPAD = {
@@ -100,7 +93,7 @@ document.addEventListener('keydown', function(e) {
   e.preventDefault();
 });
 
-// Initialize Engine
+// Initialize Engine (Pure Visual 3D Background - Drag Disabled Completely)
 function initEngine() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
@@ -116,26 +109,14 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
-  // Setup Standard OrbitControls with DOM Element Listeners
+  // OrbitControls initialized WITHOUT pointer drag listeners (Disabled Completely)
   controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.zoomSpeed = 2.0;
-  controls.panSpeed = 1.5;
-  controls.rotateSpeed = 1.5;
-  controls.target.set(0, 2, 8);
-
-  // Ensure 3D Viewport Drag Release never locks
-  setupDragReleaseSafeguard();
-
-  raycaster = new THREE.Raycaster();
-  mouse = new THREE.Vector2();
+  controls.enabled = false; // COMPLETELY DISABLE DRAG / ROTATE / PAN / ZOOM
 
   cricketSceneInstance = new CricketStadiumScene(scene, camera, controls);
   cricketSceneInstance.setCameraPreset('broadcast');
 
   window.addEventListener('resize', onWindowResize);
-  renderer.domElement.addEventListener('mousemove', onMouseMove);
   setupUIEventListeners();
 
   updatePlayersDropdown();
@@ -144,21 +125,6 @@ function initEngine() {
   setTimeout(() => moveFocus('down'), 50);
 
   renderer.setAnimationLoop(animate);
-}
-
-// 🖐️ Continuous Drag Release Safeguard
-function setupDragReleaseSafeguard() {
-  const forceRelease = function() {
-    if (controls) {
-      controls.update();
-    }
-  };
-
-  window.addEventListener('pointerup', forceRelease, true);
-  window.addEventListener('pointercancel', forceRelease, true);
-  window.addEventListener('mouseup', forceRelease, true);
-  window.addEventListener('touchend', forceRelease, true);
-  window.addEventListener('pointerleave', forceRelease, true);
 }
 
 // Update Player Dropdown Roster
@@ -313,34 +279,7 @@ function populateCatalogList(items) {
 }
 
 function animate() {
-  controls.update();
   renderer.render(scene, camera);
-}
-
-function onMouseMove(event) {
-  mouse.x = (event.clientX / 600) * 2 - 1;
-  mouse.y = -(event.clientY / 600) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-
-  if (cricketSceneInstance) {
-    const intersects = raycaster.intersectObjects(cricketSceneInstance.fieldersGroup.children, true);
-    if (intersects.length > 0) {
-      let rootObj = intersects[0].object;
-      while (rootObj.parent && !rootObj.userData.name) {
-        rootObj = rootObj.parent;
-      }
-      if (rootObj.userData.name) {
-        tooltipTitle.textContent = "Fielder";
-        tooltipX.textContent = rootObj.userData.name;
-        tooltip.style.left = `${event.clientX + 10}px`;
-        tooltip.style.top = `${event.clientY + 10}px`;
-        tooltip.classList.remove('hidden');
-        return;
-      }
-    }
-  }
-  tooltip.classList.add('hidden');
 }
 
 function onWindowResize() {

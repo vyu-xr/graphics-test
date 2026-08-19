@@ -18,7 +18,7 @@
   padding: 0;
 }
 
-/* MRBD 600x600 Fixed Viewport & Drag Opt-in */
+/* MRBD 600x600 Fixed Viewport */
 html, body {
   width: 600px;
   height: 600px;
@@ -28,11 +28,11 @@ html, body {
   background-color: #000000;
   color: #ffffff;
   font-family: var(--font-sans);
-  touch-action: none; /* REQUIRED initial stylesheet opt-in for continuous drag */
   margin: 0;
   padding: 0;
 }
 
+/* Background 3D Viewport - Pointer Drag Disabled Completely */
 #canvas-container {
   width: 600px;
   height: 600px;
@@ -40,13 +40,13 @@ html, body {
   top: 0;
   left: 0;
   z-index: 1;
-  touch-action: none;
+  pointer-events: none !important; /* Canvas ignores all pointer events */
 }
 
 #canvas-container canvas {
   width: 600px !important;
   height: 600px !important;
-  touch-action: none;
+  pointer-events: none !important;
 }
 
 /* Glasses Minimum Tap Target & Visible Focus Styles */
