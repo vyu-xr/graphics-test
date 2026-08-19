@@ -48,19 +48,51 @@ const DPAD = {
   BACK: 'Escape',
 };
 
-// Neural Band Pinch & Captouch Select Keys (Enter, Space, Select, Accept, KeyCodes 13 & 32)
+// Neural Band Pinch & Captouch Select Keys (Enter, Space, Select, Accept, KeyCodes 13, 32, 0, 229)
 function isSelectKey(e) {
+  if (!e) return false;
+  const k = e.key ? e.key.toLowerCase() : '';
+  const c = e.code ? e.code.toLowerCase() : '';
+  const codeNum = e.keyCode || e.which || 0;
+
   return (
-    e.key === 'Enter' ||
-    e.key === ' ' ||
-    e.key === 'Space' ||
-    e.key === 'Spacebar' ||
-    e.key === 'Select' ||
-    e.key === 'Accept' ||
-    e.code === 'Space' ||
-    e.keyCode === 32 ||
-    e.keyCode === 13
+    k === 'enter' ||
+    k === ' ' ||
+    k === 'space' ||
+    k === 'spacebar' ||
+    k === 'select' ||
+    k === 'accept' ||
+    k === 'perform' ||
+    k === 'click' ||
+    k === 'execute' ||
+    k === 'headsethook' ||
+    k === 'mediaselect' ||
+    k === 'mediaplaypause' ||
+    k === 'unidentified' ||
+    c === 'space' ||
+    c === 'enter' ||
+    c === 'numpadenter' ||
+    c === 'select' ||
+    c === 'buttona' ||
+    codeNum === 32 ||
+    codeNum === 13 ||
+    codeNum === 10 ||
+    codeNum === 0 ||
+    codeNum === 229
   );
+}
+
+// Execute Click on Active Focusable Element (with fallback if focus was lost)
+function executeSelectAction() {
+  let target = document.activeElement;
+  if (!target || !target.classList || !target.classList.contains('focusable')) {
+    target = document.querySelector('.focusable.active:not([disabled]):not(.hidden)') ||
+             document.querySelector('.focusable:not([disabled]):not(.hidden)');
+  }
+  if (target) {
+    try { target.focus(); } catch(err) {}
+    target.click();
+  }
 }
 
 // — Focus Management —
@@ -84,9 +116,7 @@ function moveFocus(direction) {
 // — D-pad & Neural Band Gesture Listener —
 document.addEventListener('keydown', function(e) {
   if (isSelectKey(e)) {
-    if (document.activeElement && document.activeElement.classList.contains('focusable')) {
-      document.activeElement.click();
-    }
+    executeSelectAction();
     e.preventDefault();
     return;
   }
@@ -114,6 +144,38 @@ document.addEventListener('keyup', function(e) {
     e.preventDefault();
   }
 });
+
+// Listen for Custom EMG Neural Band & WebXR Pinch Events
+['emgpinch', 'pinch', 'mrbdpinch', 'select'].forEach(eventName => {
+  window.addEventListener(eventName, function(e) {
+    executeSelectAction();
+    if (e && e.preventDefault) e.preventDefault();
+  });
+  document.addEventListener(eventName, function(e) {
+    executeSelectAction();
+    if (e && e.preventDefault) e.preventDefault();
+  });
+});
+
+// Neural Band Gamepad API Pinch Button Handler
+let lastGamepadPinchState = false;
+function checkGamepadPinch() {
+  if (!navigator.getGamepads) return;
+  try {
+    const gamepads = navigator.getGamepads();
+    if (!gamepads) return;
+    for (let i = 0; i < gamepads.length; i++) {
+      const gp = gamepads[i];
+      if (gp && gp.buttons && gp.buttons.length > 0) {
+        const pressed = gp.buttons[0].pressed || gp.buttons[0].value > 0.5;
+        if (pressed && !lastGamepadPinchState) {
+          executeSelectAction();
+        }
+        lastGamepadPinchState = pressed;
+      }
+    }
+  } catch(err) {}
+}
 
 // Toggle Sidebar Helper
 function toggleSidebarState() {
@@ -309,6 +371,7 @@ function populateCatalogList(items) {
 }
 
 function animate() {
+  checkGamepadPinch();
   renderer.render(scene, camera);
 }
 
