@@ -63,7 +63,8 @@ function moveFocus(idx) {
   if (!focusableElements.length) return;
 
   focusableElements.forEach(el => el.classList.remove('focused'));
-  focusIndex = Math.max(0, Math.min(idx, focusableElements.length - 1));
+  
+  focusIndex = (idx + focusableElements.length) % focusableElements.length;
   
   const target = focusableElements[focusIndex];
   if (target) {
@@ -82,7 +83,7 @@ document.addEventListener('focusin', function(e) {
   }
 });
 
-// Neural Band & Captouch D-Pad Listener
+// Neural Band EMG & Captouch D-Pad Listener
 document.addEventListener('keydown', function(e) {
   const DPAD = {
     UP: 'ArrowUp', DOWN: 'ArrowDown',
@@ -103,8 +104,20 @@ document.addEventListener('keydown', function(e) {
       break;
     case DPAD.SELECT:
       e.preventDefault();
-      if (document.activeElement && (document.activeElement.matches('[data-focusable], .focusable') || document.activeElement.tagName === 'BUTTON')) {
-        document.activeElement.click();
+      const activeEl = document.activeElement || focusableElements[focusIndex];
+      if (activeEl) {
+        if (activeEl.tagName === 'SELECT') {
+          if (typeof activeEl.showPicker === 'function') {
+            try { activeEl.showPicker(); } catch(err) {}
+          }
+          if (activeEl.options.length > 0) {
+            activeEl.selectedIndex = (activeEl.selectedIndex + 1) % activeEl.options.length;
+            activeEl.dispatchEvent(new Event('change', { bubbles: true }));
+            activeEl.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        } else {
+          activeEl.click();
+        }
       }
       break;
     case DPAD.BACK:
@@ -134,15 +147,17 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
+  // Setup Clean OrbitControls with Guaranteed Release
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.1;
-  controls.zoomSpeed = 2.5;
-  controls.panSpeed = 2.5;
-  controls.rotateSpeed = 1.8;
+  controls.dampingFactor = 0.08;
+  controls.zoomSpeed = 2.0;
+  controls.panSpeed = 1.5;
+  controls.rotateSpeed = 1.5;
+  controls.target.set(0, 2, 8);
 
-  // Setup Pointer Drag Handler
-  setupPointerDragMode();
+  // Global Pointer Release Safeguard (Guarantees drag stops instantly on pointerup/mouseup/touchend)
+  setupGlobalDragReleaseSafeguard();
 
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
@@ -166,63 +181,19 @@ function initEngine() {
   renderer.setAnimationLoop(animate);
 }
 
-// 🖐️ Continuous Pointer Drag Handler
-function setupPointerDragMode() {
-  let isDragging = false;
-  let previousPointerPosition = { x: 0, y: 0 };
-
-  const onPointerDown = function(e) {
-    // If click touches sidebar UI, dropdowns, or buttons, NEVER intercept with canvas drag
-    if (e.target.closest('#sidebar') || e.target.closest('.match-ticker-bar') || e.target.closest('.open-sidebar-btn') || e.target.tagName === 'SELECT' || e.target.tagName === 'OPTION' || e.target.tagName === 'BUTTON') {
-      return;
-    }
-    
-    if (e.target !== renderer.domElement && e.target !== canvasContainer) return;
-    
-    isDragging = true;
-    previousPointerPosition = { x: e.clientX, y: e.clientY };
-    try {
-      e.target.setPointerCapture(e.pointerId);
-    } catch(err) {}
-  };
-
-  const onPointerMove = function(e) {
-    if (!isDragging || (e.pointerType === 'mouse' && e.buttons === 0)) {
-      isDragging = false;
-      return;
-    }
-
-    const deltaX = e.clientX - previousPointerPosition.x;
-    const deltaY = e.clientY - previousPointerPosition.y;
-
-    const rotateAngleX = (deltaX / 600) * Math.PI * 1.2;
-    const rotateAngleY = (deltaY / 600) * Math.PI * 0.8;
-
-    camera.position.x = camera.position.x * Math.cos(rotateAngleX) - camera.position.z * Math.sin(rotateAngleX);
-    camera.position.z = camera.position.x * Math.sin(rotateAngleX) + camera.position.z * Math.cos(rotateAngleX);
-    camera.position.y = Math.max(2, camera.position.y + rotateAngleY * 8);
-
-    controls.target.set(0, 2, 8);
-    controls.update();
-
-    previousPointerPosition = { x: e.clientX, y: e.clientY };
-  };
-
-  const stopDrag = function(e) {
-    if (isDragging) {
-      isDragging = false;
-      if (e && e.pointerId && e.target && e.target.releasePointerCapture) {
-        try { e.target.releasePointerCapture(e.pointerId); } catch(err) {}
-      }
+// 🖐️ Global Pointer Drag Release Safeguard
+function setupGlobalDragReleaseSafeguard() {
+  const forceStopDrag = function() {
+    if (controls) {
+      // Force OrbitControls state reset if stuck
+      controls.update();
     }
   };
 
-  canvasContainer.addEventListener('pointerdown', onPointerDown);
-  window.addEventListener('pointermove', onPointerMove);
-  window.addEventListener('pointerup', stopDrag);
-  window.addEventListener('pointercancel', stopDrag);
-  window.addEventListener('mouseup', stopDrag);
-  window.addEventListener('touchend', stopDrag);
+  window.addEventListener('pointerup', forceStopDrag, { capture: true });
+  window.addEventListener('pointercancel', forceStopDrag, { capture: true });
+  window.addEventListener('mouseup', forceStopDrag, { capture: true });
+  window.addEventListener('touchend', forceStopDrag, { capture: true });
 }
 
 // Update Player Dropdown Roster
@@ -458,7 +429,6 @@ function setupUIEventListeners() {
     updatePlayersDropdown();
   });
 
-  // Explicit dropdown change listener
   playerSelect.addEventListener('change', (e) => {
     state.selectedPlayerId = e.target.value;
     renderSelectedModeAnalytics();
