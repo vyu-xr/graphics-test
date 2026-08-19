@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CricketStadiumScene } from './cricketScene.js';
 import { T20_FINAL_2026_DELIVERIES, TEAMS_ROSTERS } from './cricketData.js';
 
@@ -7,12 +6,11 @@ import { T20_FINAL_2026_DELIVERIES, TEAMS_ROSTERS } from './cricketData.js';
 const state = {
   team: 'IND',          // 'IND' | 'NZ'
   mode: 'batter',       // 'batter' (Wagon Wheel) | 'bowler' (Pitch Trajectory Map)
-  selectedPlayerId: 'samson',
-  dragEnabled: false    // Toggleable 3D Orbit Drag Mode (OFF by default)
+  selectedPlayerId: 'samson'
 };
 
 // Global Three.js References
-let scene, camera, renderer, controls;
+let scene, camera, renderer;
 let cricketSceneInstance = null;
 
 // DOM Elements
@@ -30,7 +28,6 @@ const teamIndBtn = document.getElementById('team-ind-btn');
 const teamNzBtn = document.getElementById('team-nz-btn');
 const modeBatterBtn = document.getElementById('mode-batter-btn');
 const modeBowlerBtn = document.getElementById('mode-bowler-btn');
-const dragToggleBtn = document.getElementById('drag-toggle-btn');
 const playerSelectLabel = document.getElementById('player-select-label');
 const playerSelect = document.getElementById('player-select');
 const catalogLabel = document.getElementById('catalog-label');
@@ -89,7 +86,6 @@ document.addEventListener('keydown', function(e) {
       }
       break;
     case DPAD.BACK:
-      // Toggle sidebar open/closed on Back button press
       toggleSidebarState();
       break;
     default: return; // don't preventDefault on unhandled keys
@@ -124,20 +120,10 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
-  // Setup OrbitControls (Controlled dynamically by state.dragEnabled)
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.08;
-  controls.zoomSpeed = 2.0;
-  controls.panSpeed = 1.5;
-  controls.rotateSpeed = 1.5;
-  controls.target.set(0, 2, 8);
-  controls.enabled = false; // Disabled by default
+  // Setup Standard MRBD Pointer Events for 3D Viewport Panning
+  setupMRBDPointerDrag();
 
-  // Universal release safeguard so dragging NEVER locks up controls
-  setupDragReleaseSafeguard();
-
-  cricketSceneInstance = new CricketStadiumScene(scene, camera, controls);
+  cricketSceneInstance = new CricketStadiumScene(scene, camera, null);
   cricketSceneInstance.setCameraPreset('broadcast');
 
   window.addEventListener('resize', onWindowResize);
@@ -145,44 +131,58 @@ function initEngine() {
 
   updatePlayersDropdown();
   
-  // Initial focus on first focusable element
+  // Set initial focus on first focusable element
   setTimeout(() => moveFocus('down'), 50);
 
   renderer.setAnimationLoop(animate);
 }
 
-// 🖐️ Continuous Drag Toggle Handler
-function toggleDragGestureMode() {
-  state.dragEnabled = !state.dragEnabled;
+// 🖐️ MRBD Continuous Drag Pointer Event Implementation
+function setupMRBDPointerDrag() {
+  let dragging = false;
+  let lastPointerPos = { x: 0, y: 0 };
 
-  if (state.dragEnabled) {
-    dragToggleBtn.classList.add('active');
-    dragToggleBtn.textContent = "🖐️ 3D Orbit Drag: ON (Active)";
-    canvasContainer.classList.add('drag-active');
-    controls.enabled = true;
-  } else {
-    dragToggleBtn.classList.remove('active');
-    dragToggleBtn.textContent = "🖐️ 3D Orbit Drag: OFF";
-    canvasContainer.classList.remove('drag-active');
-    controls.enabled = false;
-  }
-}
+  canvasContainer.addEventListener('pointerdown', function(e) {
+    // Ignore pointerdown if clicked on UI elements
+    if (e.target.closest('#sidebar') || e.target.closest('.match-ticker-bar') || e.target.closest('.open-sidebar-btn') || e.target.classList.contains('focusable')) {
+      return;
+    }
 
-// Universal Pointer Drag Release Safeguard
-function setupDragReleaseSafeguard() {
-  const forceRelease = function(e) {
-    // If click targets UI controls, prevent canvas capture interference
-    if (e.target && (e.target.closest('#sidebar') || e.target.closest('.match-ticker-bar') || e.target.closest('.open-sidebar-btn') || e.target.classList.contains('focusable'))) {
-      if (controls && controls.enabled) {
-        controls.update();
+    dragging = true;
+    lastPointerPos = { x: e.clientX, y: e.clientY };
+    try {
+      canvasContainer.setPointerCapture(e.pointerId);
+    } catch(err) {}
+  });
+
+  canvasContainer.addEventListener('pointermove', function(e) {
+    if (dragging) {
+      const deltaX = e.clientX - lastPointerPos.x;
+      const deltaY = e.clientY - lastPointerPos.y;
+
+      // Pan camera across the 3D stadium pitch using e.clientX and e.clientY
+      camera.position.x -= deltaX * 0.12;
+      camera.position.z += deltaY * 0.12;
+      camera.lookAt(camera.position.x, 2, camera.position.z - 50);
+
+      lastPointerPos = { x: e.clientX, y: e.clientY };
+    }
+  });
+
+  const stopDrag = function(e) {
+    if (dragging) {
+      dragging = false;
+      if (e && e.pointerId) {
+        try { canvasContainer.releasePointerCapture(e.pointerId); } catch(err) {}
       }
     }
   };
 
-  window.addEventListener('pointerup', forceRelease, true);
-  window.addEventListener('pointercancel', forceRelease, true);
-  window.addEventListener('mouseup', forceRelease, true);
-  window.addEventListener('touchend', forceRelease, true);
+  canvasContainer.addEventListener('pointerup', stopDrag);
+  canvasContainer.addEventListener('pointercancel', stopDrag);
+  window.addEventListener('pointerup', stopDrag, true);
+  window.addEventListener('mouseup', stopDrag, true);
+  window.addEventListener('touchend', stopDrag, true);
 }
 
 // Update Player Dropdown Roster
@@ -337,9 +337,6 @@ function populateCatalogList(items) {
 }
 
 function animate() {
-  if (controls && controls.enabled) {
-    controls.update();
-  }
   renderer.render(scene, camera);
 }
 
@@ -348,18 +345,12 @@ function onWindowResize() {
 }
 
 function setupUIEventListeners() {
-  // Sidebar Collapse / Reopen Buttons
   if (toggleSidebarBtn) {
     toggleSidebarBtn.addEventListener('click', toggleSidebarState);
   }
 
   if (openSidebarBtn) {
     openSidebarBtn.addEventListener('click', toggleSidebarState);
-  }
-
-  // 3D Drag Toggle Button
-  if (dragToggleBtn) {
-    dragToggleBtn.addEventListener('click', toggleDragGestureMode);
   }
 
   teamIndBtn.addEventListener('click', () => {

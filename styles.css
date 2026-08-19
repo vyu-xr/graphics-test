@@ -18,8 +18,9 @@
   padding: 0;
 }
 
-/* MRBD 600x600 Fixed Viewport */
-html, body {
+/* MUST be in your initial stylesheet, as it is not added dynamically via JavaScript */
+body {
+  touch-action: none;
   width: 600px;
   height: 600px;
   max-width: 600px;
@@ -32,6 +33,14 @@ html, body {
   padding: 0;
 }
 
+html {
+  width: 600px;
+  height: 600px;
+  max-width: 600px;
+  max-height: 600px;
+  overflow: hidden;
+}
+
 /* Background 3D Viewport */
 #canvas-container {
   width: 600px;
@@ -40,21 +49,13 @@ html, body {
   top: 0;
   left: 0;
   z-index: 1;
-  pointer-events: none;
+  touch-action: none;
 }
 
 #canvas-container canvas {
   width: 600px !important;
   height: 600px !important;
-}
-
-/* When 3D drag is active, pointer-events are enabled on canvas */
-#canvas-container.drag-active {
-  pointer-events: auto !important;
-}
-
-#canvas-container.drag-active canvas {
-  pointer-events: auto !important;
+  touch-action: none;
 }
 
 /* Glasses Minimum Tap Target & Visible Focus Styles */
@@ -250,31 +251,6 @@ html, body {
   min-height: 48px;
   min-width: 48px;
   border-radius: 8px;
-}
-
-/* 3D Drag Toggle Button */
-.drag-toggle-btn {
-  padding: 10px;
-  background: #07090e;
-  border: 1px solid var(--panel-border);
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: 0.78rem;
-  font-weight: 700;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 88px;
-  cursor: pointer;
-}
-
-.drag-toggle-btn.active {
-  background: rgba(0, 212, 255, 0.25);
-  border-color: var(--accent-cyan);
-  color: #00d4ff;
-  box-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
 }
 
 /* Team & Category Tabs */
