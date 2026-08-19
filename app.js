@@ -41,141 +41,93 @@ const statP3 = document.getElementById('stat-p3');
 const statP4 = document.getElementById('stat-p4');
 const statSummaryBadge = document.getElementById('stat-summary-badge');
 
-// — Input Constants —
+// — Meta Ray-Ban Display Web Apps Focus & Input System —
 const DPAD = {
   UP: 'ArrowUp', DOWN: 'ArrowDown',
   LEFT: 'ArrowLeft', RIGHT: 'ArrowRight',
-  BACK: 'Escape',
+  SELECT: 'Enter', SPACE: ' ', BACK: 'Escape',
 };
 
-// Neural Band Pinch & Captouch Select Keys (Enter, Space, Select, Accept, KeyCodes 13, 32, 0, 229)
-function isSelectKey(e) {
-  if (!e) return false;
-  const k = e.key ? e.key.toLowerCase() : '';
-  const c = e.code ? e.code.toLowerCase() : '';
-  const codeNum = e.keyCode || e.which || 0;
+let focusableElements = [];
+let focusIndex = 0;
 
-  return (
-    k === 'enter' ||
-    k === ' ' ||
-    k === 'space' ||
-    k === 'spacebar' ||
-    k === 'select' ||
-    k === 'accept' ||
-    k === 'perform' ||
-    k === 'click' ||
-    k === 'execute' ||
-    k === 'headsethook' ||
-    k === 'mediaselect' ||
-    k === 'mediaplaypause' ||
-    k === 'unidentified' ||
-    c === 'space' ||
-    c === 'enter' ||
-    c === 'numpadenter' ||
-    c === 'select' ||
-    c === 'buttona' ||
-    codeNum === 32 ||
-    codeNum === 13 ||
-    codeNum === 10 ||
-    codeNum === 0 ||
-    codeNum === 229
+function updateFocusables() {
+  focusableElements = Array.from(
+    document.querySelectorAll('.focusable:not([disabled]):not(.hidden), [data-focusable]:not([disabled]):not(.hidden)')
   );
 }
 
-// Execute Click on Active Focusable Element (with fallback if focus was lost)
-function executeSelectAction() {
-  let target = document.activeElement;
-  if (!target || !target.classList || !target.classList.contains('focusable')) {
-    target = document.querySelector('.focusable.active:not([disabled]):not(.hidden)') ||
-             document.querySelector('.focusable:not([disabled]):not(.hidden)');
+function moveFocus(dir) {
+  updateFocusables();
+  if (!focusableElements.length) return;
+
+  var idx = focusableElements.indexOf(document.activeElement);
+  if (idx === -1) idx = focusIndex;
+
+  if (dir === 'up' || dir === 'left') {
+    focusIndex = idx > 0 ? idx - 1 : focusableElements.length - 1;
+  } else {
+    focusIndex = idx < focusableElements.length - 1 ? idx + 1 : 0;
   }
+
+  const target = focusableElements[focusIndex];
   if (target) {
-    try { target.focus(); } catch(err) {}
-    target.click();
+    focusableElements.forEach(el => el.classList.remove('focused'));
+    target.classList.add('focused');
+    target.focus();
+    target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 }
 
-// — Focus Management —
-function moveFocus(direction) {
-  var focusables = Array.from(
-    document.querySelectorAll('.focusable:not([disabled]):not(.hidden)')
-  );
-  if (!focusables.length) return;
+document.addEventListener('focusin', function(e) {
+  updateFocusables();
+  const idx = focusableElements.indexOf(e.target);
+  if (idx !== -1) {
+    focusableElements.forEach(el => el.classList.remove('focused'));
+    focusIndex = idx;
+    e.target.classList.add('focused');
+  }
+});
 
-  var idx = focusables.indexOf(document.activeElement);
-  if (idx === -1) { focusables[0].focus(); return; }
-
-  var next = (direction === 'up' || direction === 'left')
-    ? (idx > 0 ? idx - 1 : focusables.length - 1)
-    : (idx < focusables.length - 1 ? idx + 1 : 0);
-
-  focusables[next].focus();
-  focusables[next].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-}
-
-// — D-pad & Neural Band Gesture Listener —
+// Neural Band Pinch & D-pad Listener
 document.addEventListener('keydown', function(e) {
-  if (isSelectKey(e)) {
-    executeSelectAction();
-    e.preventDefault();
-    return;
-  }
-
   switch (e.key) {
-    case DPAD.UP:     moveFocus('up');    break;
-    case DPAD.DOWN:   moveFocus('down');  break;
-    case DPAD.LEFT:   moveFocus('left');  break;
-    case DPAD.RIGHT:  moveFocus('right'); break;
+    case DPAD.UP:
+    case DPAD.LEFT:
+      e.preventDefault();
+      moveFocus('up');
+      break;
+    case DPAD.DOWN:
+    case DPAD.RIGHT:
+      e.preventDefault();
+      moveFocus('down');
+      break;
+    case DPAD.SELECT:
+    case DPAD.SPACE:
+    case 'Select':
+    case 'Accept':
+      e.preventDefault();
+      let active = document.activeElement;
+      if (!active || active === document.body || (!active.classList.contains('focusable') && !active.hasAttribute('data-focusable'))) {
+        updateFocusables();
+        active = focusableElements[focusIndex] || focusableElements[0];
+      }
+      if (active) {
+        active.click();
+      }
+      break;
     case DPAD.BACK:
+      e.preventDefault();
       if (window.history.length > 1) {
         history.back();
       } else {
         toggleSidebarState();
       }
       break;
-    default: return; // don't preventDefault on unhandled keys
-  }
-  e.preventDefault();
-});
-
-// Prevent Space key default page scrolling on keyup
-document.addEventListener('keyup', function(e) {
-  if (isSelectKey(e)) {
-    e.preventDefault();
+    default:
+      return;
   }
 });
-
-// Listen for Custom EMG Neural Band & WebXR Pinch Events
-['emgpinch', 'pinch', 'mrbdpinch', 'select'].forEach(eventName => {
-  window.addEventListener(eventName, function(e) {
-    executeSelectAction();
-    if (e && e.preventDefault) e.preventDefault();
-  });
-  document.addEventListener(eventName, function(e) {
-    executeSelectAction();
-    if (e && e.preventDefault) e.preventDefault();
-  });
-});
-
-// Neural Band Gamepad API Pinch Button Handler
-let lastGamepadPinchState = false;
-function checkGamepadPinch() {
-  if (!navigator.getGamepads) return;
-  try {
-    const gamepads = navigator.getGamepads();
-    if (!gamepads) return;
-    for (let i = 0; i < gamepads.length; i++) {
-      const gp = gamepads[i];
-      if (gp && gp.buttons && gp.buttons.length > 0) {
-        const pressed = gp.buttons[0].pressed || gp.buttons[0].value > 0.5;
-        if (pressed && !lastGamepadPinchState) {
-          executeSelectAction();
-        }
-        lastGamepadPinchState = pressed;
-      }
-    }
-  } catch(err) {}
-}
 
 // Toggle Sidebar Helper
 function toggleSidebarState() {
@@ -371,7 +323,6 @@ function populateCatalogList(items) {
 }
 
 function animate() {
-  checkGamepadPinch();
   renderer.render(scene, camera);
 }
 
