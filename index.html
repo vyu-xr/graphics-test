@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=600, height=600, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="Meta Ray-Ban Display 3D Cricket Analytics Web App - Fixed 600x600 Viewport with EMG Neural Band & Captouch Drag Controls.">
+  <meta name="mrbd-web-app-capable" content="yes">
+  <title>3D Cricket Analytics | Meta Ray-Ban Display Web App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Canvas Container (3D Viewport with Continuous Pointer Dragging) -->
+  <div id="canvas-container"></div>
+
+  <!-- Floating Reopen Sidebar Button (Visible if panel is closed) -->
+  <button id="open-sidebar-btn" class="open-sidebar-btn glass-panel focusable hidden" data-focusable aria-label="Open Panel">
+    📋 Menu
+  </button>
+
+  <!-- Top Header Banner -->
+  <div class="match-ticker-bar glass-panel">
+    <div class="ticker-col">
+      <span class="ticker-label">MATCH</span>
+      <strong class="ticker-val-gold">T20 WC Final '26</strong>
+    </div>
+    <div class="ticker-col border-left">
+      <span class="ticker-label">VIEW MODE</span>
+      <strong id="ticker-view-mode" class="ticker-val-cyan">Batter 3D Spray</strong>
+    </div>
+    <div class="ticker-col border-left">
+      <span class="ticker-label">SELECTED</span>
+      <strong id="ticker-player-name" class="ticker-val">Samson (89)</strong>
+    </div>
+  </div>
+
+  <!-- Sidebar Control HUD Panel -->
+  <aside class="glass-panel sidebar" id="sidebar">
+    <div class="panel-header">
+      <div class="logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+        </svg>
+        <span>3D MRBD <span class="badge">600x600</span></span>
+      </div>
+      <button class="icon-btn toggle-sidebar focusable" id="toggle-sidebar-btn" aria-label="Toggle Panel" data-focusable>
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <div class="panel-content">
+      <!-- 1. Team Selector -->
+      <div class="control-group">
+        <label>Select Team</label>
+        <div class="team-tabs">
+          <button id="team-ind-btn" class="team-btn focusable active" data-focusable>🇮🇳 IND</button>
+          <button id="team-nz-btn" class="team-btn focusable" data-focusable>🇳🇿 NZ</button>
+        </div>
+      </div>
+
+      <!-- 2. View Mode Selector: Batter Wagon Wheel vs Bowler Ball Map -->
+      <div class="control-group">
+        <label>3D Analytics Mode</label>
+        <div class="mode-tabs">
+          <button id="mode-batter-btn" class="mode-btn focusable active" data-focusable>🏏 Batter</button>
+          <button id="mode-bowler-btn" class="mode-btn focusable" data-focusable>🎯 Bowler</button>
+        </div>
+      </div>
+
+      <!-- 3. Player Selector Dropdown -->
+      <div class="control-group">
+        <label for="player-select" id="player-select-label">Select Batter</label>
+        <select id="player-select" class="custom-select focusable" data-focusable>
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <!-- 4. Player Stats Card -->
+      <div class="stat-card">
+        <div class="stat-title" id="stat-player-title">Sanju Samson</div>
+        <div class="stat-grid" id="stat-grid-container">
+          <div class="stat-box">
+            <span class="stat-label">Runs (Balls)</span>
+            <strong class="stat-val" id="stat-p1">89 (46)</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Strike Rate</span>
+            <strong class="stat-val" id="stat-p2">193.5</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Boundaries</span>
+            <strong class="stat-val" id="stat-p3">7x4 | 6x6</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Max Dist</span>
+            <strong class="stat-val" id="stat-p4">94.0 m</strong>
+          </div>
+        </div>
+        <div class="outcome-badge" id="stat-summary-badge">Wagon Wheel Active</div>
+      </div>
+
+      <!-- 5. List of All Shots / Ball Trajectories -->
+      <div class="control-group">
+        <label id="catalog-label">Shots Catalog</label>
+        <div id="shots-list-container" class="shots-list">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- 6. Camera View Presets -->
+      <div class="control-group">
+        <label>3D View Angle</label>
+        <div class="cam-presets-grid">
+          <button class="cam-btn focusable active" data-cam="broadcast" data-focusable>Broadcast</button>
+          <button class="cam-btn focusable" data-cam="topdown" data-focusable>Top-Down</button>
+          <button class="cam-btn focusable" data-cam="pitchcam" data-focusable>Pitch</button>
+          <button class="cam-btn focusable" data-cam="batterpov" data-focusable>Batter POV</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Interactive Tooltip -->
+  <div id="tooltip" class="glass-panel tooltip-popup hidden">
+    <div class="tooltip-title" id="tooltip-title">3D Fielder</div>
+    <div class="tooltip-row"><span>Name:</span> <strong id="tooltip-x">Fielder</strong></div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

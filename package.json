@@ -1,0 +1,23 @@
+{
+  "name": "threejs-3d-graph-starter",
+  "version": "1.0.0",
+  "description": "Interactive 3D Graph Plotter Starter built with Three.js, Vanilla CSS, and JavaScript",
+  "main": "app.js",
+  "scripts": {
+    "dev": "npx -y serve . -l 3000",
+    "start": "npx -y serve ."
+  },
+  "keywords": [
+    "threejs",
+    "3d",
+    "graphing",
+    "math",
+    "visualization",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}
