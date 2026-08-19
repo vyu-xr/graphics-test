@@ -120,9 +120,6 @@ function initEngine() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   canvasContainer.appendChild(renderer.domElement);
 
-  // Setup Standard MRBD Pointer Drag Panning for 3D Viewport
-  setupMRBDPointerDrag();
-
   cricketSceneInstance = new CricketStadiumScene(scene, camera, null);
   cricketSceneInstance.setCameraPreset('broadcast');
 
@@ -135,53 +132,6 @@ function initEngine() {
   setTimeout(() => moveFocus('down'), 50);
 
   renderer.setAnimationLoop(animate);
-}
-
-// 🖐️ MRBD Continuous Drag Pointer Event Implementation
-function setupMRBDPointerDrag() {
-  let dragging = false;
-  let lastPointerPos = { x: 0, y: 0 };
-
-  canvasContainer.addEventListener('pointerdown', function(e) {
-    if (e.target.closest('#sidebar') || e.target.closest('.match-ticker-bar') || e.target.closest('.open-sidebar-btn') || e.target.classList.contains('focusable')) {
-      return;
-    }
-
-    dragging = true;
-    lastPointerPos = { x: e.clientX, y: e.clientY };
-    try {
-      canvasContainer.setPointerCapture(e.pointerId);
-    } catch(err) {}
-  });
-
-  canvasContainer.addEventListener('pointermove', function(e) {
-    if (dragging) {
-      const deltaX = e.clientX - lastPointerPos.x;
-      const deltaY = e.clientY - lastPointerPos.y;
-
-      // Pan camera within safe stadium boundaries
-      camera.position.x = Math.max(-50, Math.min(50, camera.position.x - deltaX * 0.08));
-      camera.position.z = Math.max(20, Math.min(90, camera.position.z + deltaY * 0.08));
-      camera.lookAt(0, 2, 8); // Always keep stadium pitch centered!
-
-      lastPointerPos = { x: e.clientX, y: e.clientY };
-    }
-  });
-
-  const stopDrag = function(e) {
-    if (dragging) {
-      dragging = false;
-      if (e && e.pointerId) {
-        try { canvasContainer.releasePointerCapture(e.pointerId); } catch(err) {}
-      }
-    }
-  };
-
-  canvasContainer.addEventListener('pointerup', stopDrag);
-  canvasContainer.addEventListener('pointercancel', stopDrag);
-  window.addEventListener('pointerup', stopDrag, true);
-  window.addEventListener('mouseup', stopDrag, true);
-  window.addEventListener('touchend', stopDrag, true);
 }
 
 // Update Player Dropdown Roster
